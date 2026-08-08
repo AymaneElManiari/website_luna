@@ -1,0 +1,10 @@
+{
+  "description": "Showcases a premium women's fashion accessories collection with elegant design and a seamless modal checkout for a high-end shopping experience.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
