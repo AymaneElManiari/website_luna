@@ -4,7 +4,9 @@ export const GOOGLE_SHEET_WEBHOOK_URL =
   "https://script.google.com/macros/s/AKfycbwjru8415JBAD9UjtGcduDtYK4F4yD1GhH_bQ9tsyStgjqA3xx82RykBc4YXSqRO3Y6/exec";
 
 function useIsMobile(bp = 768) {
-  const [mobile, setMobile] = useState(window.innerWidth < bp);
+  const [mobile, setMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < bp : false
+  );
   useEffect(() => {
     const fn = () => setMobile(window.innerWidth < bp);
     window.addEventListener("resize", fn);
@@ -1625,9 +1627,11 @@ function ImageCompareSlider({ isMobile = false }: { isMobile?: boolean }) {
       }
     };
     updateWidth();
-    const ro = new ResizeObserver(updateWidth);
-    ro.observe(containerRef.current);
-    return () => ro.disconnect();
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(updateWidth);
+      ro.observe(containerRef.current);
+      return () => ro.disconnect();
+    }
   }, []);
 
   const handleMove = useCallback((clientX: number) => {
