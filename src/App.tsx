@@ -572,6 +572,15 @@ function OrderModal({
           body: JSON.stringify(payload),
         });
       }
+      if (typeof window !== "undefined" && (window as any).fbq) {
+        (window as any).fbq("track", "Purchase", {
+          value: total,
+          currency: "MAD",
+          content_name: order.product,
+          content_type: "product",
+          num_items: effectiveQuantity,
+        });
+      }
       const existing = JSON.parse(localStorage.getItem("luna_orders") || "[]");
       existing.push(payload);
       localStorage.setItem("luna_orders", JSON.stringify(existing));
