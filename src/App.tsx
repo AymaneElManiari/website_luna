@@ -186,6 +186,118 @@ function useLockBodyScroll(isOpen: boolean = true) {
   }, [isOpen]);
 }
 
+// ── Modal de Prévisualisation Agrandie de Variante ────────────────────────────
+function BigVariantPreviewModal({
+  variant,
+  onClose,
+  onSelect,
+  isSelected,
+}: {
+  variant: { category?: string; name: string; img: string } | null;
+  onClose: () => void;
+  onSelect?: () => void;
+  isSelected?: boolean;
+}) {
+  useLockBodyScroll(!!variant);
+
+  if (!variant) return null;
+
+  return (
+    <div
+      className="modal-overlay flex items-center justify-center p-4"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0, 0, 0, 0.8)",
+        backdropFilter: "blur(8px)",
+        zIndex: 99999,
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="modal-enter relative bg-white overflow-hidden max-w-md w-full rounded-2xl shadow-2xl flex flex-col items-center p-6 text-center"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          border: "1.5px solid rgba(200, 169, 106, 0.5)",
+          boxShadow: "0 25px 60px -12px rgba(0, 0, 0, 0.45)",
+        }}
+      >
+        {/* Bouton Fermer (X Icon) */}
+        <button
+          onClick={onClose}
+          type="button"
+          aria-label="Fermer"
+          className="absolute top-3.5 right-3.5 flex items-center justify-center rounded-full transition-all cursor-pointer shadow hover:scale-110 active:scale-95"
+          style={{
+            width: 36,
+            height: 36,
+            background: "#F7F3EE",
+            border: "1.5px solid rgba(17,17,17,0.18)",
+            color: "#111",
+            zIndex: 20,
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
+            <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+
+        {/* Entête Catégorie & Nom */}
+        {variant.category && (
+          <p
+            className="font-sans text-[0.68rem] uppercase tracking-widest font-bold mb-1"
+            style={{ color: "#C8A96A" }}
+          >
+            {variant.category}
+          </p>
+        )}
+        <h4 className="font-serif font-bold text-xl text-gray-900 mb-3 pr-6">
+          Variante : <span style={{ color: "#C8A96A" }}>{variant.name}</span>
+        </h4>
+
+        {/* Image Agrandie */}
+        <div
+          className="w-full rounded-xl overflow-hidden mb-5 border border-black/10 shadow-lg bg-stone-100 relative group"
+          style={{ height: 320 }}
+        >
+          <img
+            src={variant.img}
+            alt={variant.name}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        </div>
+
+        {/* Boutons d'Action */}
+        <div className="w-full flex gap-3">
+          {onSelect && (
+            <button
+              type="button"
+              onClick={() => {
+                onSelect();
+                onClose();
+              }}
+              className="flex-1 py-3 px-4 rounded-xl font-sans font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md hover:brightness-110 active:scale-95"
+              style={{
+                background: isSelected ? "#C8A96A" : "#111111",
+                color: isSelected ? "#111111" : "#FFFFFF",
+              }}
+            >
+              {isSelected ? "✓ Variante Choisie" : "Choisir Cette Variante"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="py-3 px-4 rounded-xl font-sans font-medium text-xs uppercase tracking-wider border border-gray-300 text-gray-700 hover:bg-gray-100 cursor-pointer transition-all active:scale-95"
+          >
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Composant Modal de Commande ───────────────────────────────────────────────
 function OrderModal({
   initialProduct,
@@ -197,6 +309,13 @@ function OrderModal({
   onClose: () => void;
 }) {
   useLockBodyScroll(true);
+  const [previewVariant, setPreviewVariant] = useState<{
+    category?: string;
+    name: string;
+    img: string;
+    onSelect?: () => void;
+    isSelected?: boolean;
+  } | null>(null);
   const products = [
     {
       name: "Pack Exclusif (Les 3 pièces)",
@@ -625,6 +744,9 @@ function OrderModal({
               <div className="text-center">
                 {order.product === "Pack Exclusif (Les 3 pièces)" ? (
                   <div className="space-y-4 text-center">
+                    <p className="font-sans text-[0.7rem] uppercase tracking-wider text-[#C8A96A] font-semibold">
+                      Cliquez sur une variante pour la choisir & l'agrandir 🔍
+                    </p>
                     {/* 1. Bonnet Crochet */}
                     <div>
                       <label
@@ -643,6 +765,7 @@ function OrderModal({
                             Rouge: MESH_1,
                           };
                           const isSelected = packBonnetColor === c;
+                          const img = bonnetImgMap[c] || MESH_5;
                           return (
                             <button
                               key={`p-b-${c}`}
@@ -651,11 +774,21 @@ function OrderModal({
                               onClick={() => {
                                 setPackBonnetColor(c);
                                 setOrder((o) => ({ ...o, color: `Bonnet: ${c} · Joncs: ${packBanglesColor} · Pandora: ${packPandoraColor}` }));
+                                setPreviewVariant({
+                                  category: "1. Bonnet Crochet",
+                                  name: c,
+                                  img: img,
+                                  onSelect: () => {
+                                    setPackBonnetColor(c);
+                                    setOrder((o) => ({ ...o, color: `Bonnet: ${c} · Joncs: ${packBanglesColor} · Pandora: ${packPandoraColor}` }));
+                                  },
+                                  isSelected: true,
+                                });
                               }}
-                              className="relative flex-shrink-0 cursor-pointer transition-all duration-200"
+                              className="relative flex-shrink-0 cursor-pointer transition-all duration-200 group"
                               style={{
-                                width: 48,
-                                height: 48,
+                                width: 52,
+                                height: 52,
                                 border: isSelected ? "2px solid #C8A96A" : "1px solid rgba(17,17,17,0.15)",
                                 boxShadow: isSelected ? "0 0 12px rgba(200,169,106,0.35)" : "none",
                                 padding: 2,
@@ -663,7 +796,13 @@ function OrderModal({
                                 borderRadius: 8,
                               }}
                             >
-                              <img src={bonnetImgMap[c]} alt={c} className="w-full h-full object-cover rounded-md" />
+                              <img src={img} alt={c} className="w-full h-full object-cover rounded-md" />
+                              <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5">
+                                  <circle cx="11" cy="11" r="8" />
+                                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                              </span>
                               {isSelected && (
                                 <div
                                   className="absolute -top-1.5 -right-1.5 flex items-center justify-center rounded-full"
@@ -697,6 +836,7 @@ function OrderModal({
                             Rouge: BANGLES_4,
                           };
                           const isSelected = packBanglesColor === c;
+                          const img = bangleImgMap[c] || BANGLES_1;
                           return (
                             <button
                               key={`p-j-${c}`}
@@ -705,11 +845,21 @@ function OrderModal({
                               onClick={() => {
                                 setPackBanglesColor(c);
                                 setOrder((o) => ({ ...o, color: `Bonnet: ${packBonnetColor} · Joncs: ${c} · Pandora: ${packPandoraColor}` }));
+                                setPreviewVariant({
+                                  category: "2. Bracelets Joncs (3 Bangles)",
+                                  name: c,
+                                  img: img,
+                                  onSelect: () => {
+                                    setPackBanglesColor(c);
+                                    setOrder((o) => ({ ...o, color: `Bonnet: ${packBonnetColor} · Joncs: ${c} · Pandora: ${packPandoraColor}` }));
+                                  },
+                                  isSelected: true,
+                                });
                               }}
-                              className="relative flex-shrink-0 cursor-pointer transition-all duration-200"
+                              className="relative flex-shrink-0 cursor-pointer transition-all duration-200 group"
                               style={{
-                                width: 48,
-                                height: 48,
+                                width: 52,
+                                height: 52,
                                 border: isSelected ? "2px solid #C8A96A" : "1px solid rgba(17,17,17,0.15)",
                                 boxShadow: isSelected ? "0 0 12px rgba(200,169,106,0.35)" : "none",
                                 padding: 2,
@@ -717,7 +867,13 @@ function OrderModal({
                                 borderRadius: 8,
                               }}
                             >
-                              <img src={bangleImgMap[c]} alt={c} className="w-full h-full object-cover rounded-md" />
+                              <img src={img} alt={c} className="w-full h-full object-cover rounded-md" />
+                              <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5">
+                                  <circle cx="11" cy="11" r="8" />
+                                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                              </span>
                               {isSelected && (
                                 <div
                                   className="absolute -top-1.5 -right-1.5 flex items-center justify-center rounded-full"
@@ -751,6 +907,7 @@ function OrderModal({
                             Argent: PANDORA_4,
                           };
                           const isSelected = packPandoraColor === c;
+                          const img = pandoraImgMap[c] || PANDORA_1;
                           return (
                             <button
                               key={`p-p-${c}`}
@@ -759,11 +916,21 @@ function OrderModal({
                               onClick={() => {
                                 setPackPandoraColor(c);
                                 setOrder((o) => ({ ...o, color: `Bonnet: ${packBonnetColor} · Joncs: ${packBanglesColor} · Pandora: ${c}` }));
+                                setPreviewVariant({
+                                  category: "3. Bracelet Style Pandora",
+                                  name: c,
+                                  img: img,
+                                  onSelect: () => {
+                                    setPackPandoraColor(c);
+                                    setOrder((o) => ({ ...o, color: `Bonnet: ${packBonnetColor} · Joncs: ${packBanglesColor} · Pandora: ${c}` }));
+                                  },
+                                  isSelected: true,
+                                });
                               }}
-                              className="relative flex-shrink-0 cursor-pointer transition-all duration-200"
+                              className="relative flex-shrink-0 cursor-pointer transition-all duration-200 group"
                               style={{
-                                width: 48,
-                                height: 48,
+                                width: 52,
+                                height: 52,
                                 border: isSelected ? "2px solid #C8A96A" : "1px solid rgba(17,17,17,0.15)",
                                 boxShadow: isSelected ? "0 0 12px rgba(200,169,106,0.35)" : "none",
                                 padding: 2,
@@ -771,7 +938,13 @@ function OrderModal({
                                 borderRadius: 8,
                               }}
                             >
-                              <img src={pandoraImgMap[c]} alt={c} className="w-full h-full object-cover rounded-md" />
+                              <img src={img} alt={c} className="w-full h-full object-cover rounded-md" />
+                              <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5">
+                                  <circle cx="11" cy="11" r="8" />
+                                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                              </span>
                               {isSelected && (
                                 <div
                                   className="absolute -top-1.5 -right-1.5 flex items-center justify-center rounded-full"
@@ -790,6 +963,9 @@ function OrderModal({
                   </div>
                 ) : order.product === "Bonnet Crochet" ? (
                   <div className="space-y-4 text-center">
+                    <p className="font-sans text-[0.7rem] uppercase tracking-wider text-[#C8A96A] font-semibold">
+                      Cliquez sur une variante pour la choisir & l'agrandir 🔍
+                    </p>
                     {/* 1er Bonnet */}
                     <div>
                       <label
@@ -801,13 +977,14 @@ function OrderModal({
                       <div className="flex gap-2.5 justify-center overflow-x-auto pb-1">
                         {colors["Bonnet Crochet"].map((c) => {
                           const bonnetImgMap: Record<string, string> = {
-                            "Beige Naturel": MESH_5,
-                            "Blanc Pure": MESH_3,
-                            "Noir Élégant": MESH_2,
-                            "Marron Chocolat": MESH_4,
-                            "Rouge Passion": MESH_1,
+                            Beige: MESH_5,
+                            Blanc: MESH_3,
+                            Noir: MESH_2,
+                            Marron: MESH_4,
+                            Rouge: MESH_1,
                           };
                           const isSelected = bonnet1Color === c;
+                          const img = bonnetImgMap[c] || MESH_5;
                           return (
                             <button
                               key={`m-b1-${c}`}
@@ -816,8 +993,18 @@ function OrderModal({
                               onClick={() => {
                                 setBonnet1Color(c);
                                 setOrder((o) => ({ ...o, color: `${c} + ${bonnet2Color}` }));
+                                setPreviewVariant({
+                                  category: "1er Bonnet Crochet",
+                                  name: c,
+                                  img: img,
+                                  onSelect: () => {
+                                    setBonnet1Color(c);
+                                    setOrder((o) => ({ ...o, color: `${c} + ${bonnet2Color}` }));
+                                  },
+                                  isSelected: true,
+                                });
                               }}
-                              className="relative flex-shrink-0 cursor-pointer transition-all duration-200"
+                              className="relative flex-shrink-0 cursor-pointer transition-all duration-200 group"
                               style={{
                                 width: 52,
                                 height: 52,
@@ -828,7 +1015,13 @@ function OrderModal({
                                 borderRadius: 8,
                               }}
                             >
-                              <img src={bonnetImgMap[c]} alt={c} className="w-full h-full object-cover rounded-md" />
+                              <img src={img} alt={c} className="w-full h-full object-cover rounded-md" />
+                              <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5">
+                                  <circle cx="11" cy="11" r="8" />
+                                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                              </span>
                               {isSelected && (
                                 <div
                                   className="absolute -top-1.5 -right-1.5 flex items-center justify-center rounded-full"
@@ -856,13 +1049,14 @@ function OrderModal({
                       <div className="flex gap-2.5 justify-center overflow-x-auto pb-1">
                         {colors["Bonnet Crochet"].map((c) => {
                           const bonnetImgMap: Record<string, string> = {
-                            "Beige Naturel": MESH_5,
-                            "Blanc Pure": MESH_3,
-                            "Noir Élégant": MESH_2,
-                            "Marron Chocolat": MESH_4,
-                            "Rouge Passion": MESH_1,
+                            Beige: MESH_5,
+                            Blanc: MESH_3,
+                            Noir: MESH_2,
+                            Marron: MESH_4,
+                            Rouge: MESH_1,
                           };
                           const isSelected = bonnet2Color === c;
+                          const img = bonnetImgMap[c] || MESH_3;
                           return (
                             <button
                               key={`m-b2-${c}`}
@@ -871,8 +1065,18 @@ function OrderModal({
                               onClick={() => {
                                 setBonnet2Color(c);
                                 setOrder((o) => ({ ...o, color: `${bonnet1Color} + ${c}` }));
+                                setPreviewVariant({
+                                  category: "2ème Bonnet Crochet",
+                                  name: c,
+                                  img: img,
+                                  onSelect: () => {
+                                    setBonnet2Color(c);
+                                    setOrder((o) => ({ ...o, color: `${bonnet1Color} + ${c}` }));
+                                  },
+                                  isSelected: true,
+                                });
                               }}
-                              className="relative flex-shrink-0 cursor-pointer transition-all duration-200"
+                              className="relative flex-shrink-0 cursor-pointer transition-all duration-200 group"
                               style={{
                                 width: 52,
                                 height: 52,
@@ -883,7 +1087,13 @@ function OrderModal({
                                 borderRadius: 8,
                               }}
                             >
-                              <img src={bonnetImgMap[c]} alt={c} className="w-full h-full object-cover rounded-md" />
+                              <img src={img} alt={c} className="w-full h-full object-cover rounded-md" />
+                              <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5">
+                                  <circle cx="11" cy="11" r="8" />
+                                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                              </span>
                               {isSelected && (
                                 <div
                                   className="absolute -top-1.5 -right-1.5 flex items-center justify-center rounded-full"
@@ -902,8 +1112,11 @@ function OrderModal({
                   </div>
                 ) : (
                   <div className="space-y-4 text-center">
+                    <p className="font-sans text-[0.7rem] uppercase tracking-wider text-[#C8A96A] font-semibold">
+                      Cliquez sur une variante pour la choisir & l'agrandir 🔍
+                    </p>
                     {Array.from({ length: order.quantity }).map((_, index) => {
-                      const currentSelected = braceletColors[index] || colors[order.product]?.[0] || "Beige Nacré";
+                      const currentSelected = braceletColors[index] || colors[order.product]?.[0] || "Beige";
                       const labelText =
                         order.quantity > 1
                           ? `${index + 1}${index === 0 ? "er" : "ème"} Bracelet`
@@ -945,11 +1158,20 @@ function OrderModal({
                                     key={`b-${index}-${c}`}
                                     title={`${labelText} : ${c}`}
                                     type="button"
-                                    onClick={() => handleBraceletVariantSelect(index, c)}
-                                    className="relative flex-shrink-0 cursor-pointer transition-all duration-200"
+                                    onClick={() => {
+                                      handleBraceletVariantSelect(index, c);
+                                      setPreviewVariant({
+                                        category: order.product,
+                                        name: c,
+                                        img: imgUrl,
+                                        onSelect: () => handleBraceletVariantSelect(index, c),
+                                        isSelected: true,
+                                      });
+                                    }}
+                                    className="relative flex-shrink-0 cursor-pointer transition-all duration-200 group"
                                     style={{
-                                      width: 48,
-                                      height: 48,
+                                      width: 52,
+                                      height: 52,
                                       border: isSelected ? "2px solid #C8A96A" : "1px solid rgba(17,17,17,0.15)",
                                       boxShadow: isSelected ? "0 0 12px rgba(200,169,106,0.35)" : "none",
                                       padding: 2,
@@ -958,6 +1180,12 @@ function OrderModal({
                                     }}
                                   >
                                     <img src={imgUrl} alt={c} className="w-full h-full object-cover rounded-md" />
+                                    <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5">
+                                        <circle cx="11" cy="11" r="8" />
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                      </svg>
+                                    </span>
                                     {isSelected && (
                                       <div
                                         className="absolute -top-1.5 -right-1.5 flex items-center justify-center rounded-full"
@@ -1134,6 +1362,13 @@ function OrderModal({
           </div>
         )}
       </div>
+
+      <BigVariantPreviewModal
+        variant={previewVariant}
+        onClose={() => setPreviewVariant(null)}
+        onSelect={previewVariant?.onSelect}
+        isSelected={previewVariant?.isSelected}
+      />
     </div>
   );
 }
@@ -1221,11 +1456,18 @@ function ProductSection({
 }: ProductSectionProps) {
   const [selectedColor, setSelectedColor] = useState(colorsList[0]);
   const [currentMainImg, setCurrentMainImg] = useState(mainImg);
-  const [bonnetColor, setBonnetColor] = useState("Beige Naturel");
-  const [banglesColor, setBanglesColor] = useState("Beige Nacré");
-  const [pandoraColor, setPandoraColor] = useState("Rose Sakura");
-  const [bonnetColor1, setBonnetColor1] = useState("Beige Naturel");
-  const [bonnetColor2, setBonnetColor2] = useState("Blanc Pure");
+  const [bonnetColor, setBonnetColor] = useState("Beige");
+  const [banglesColor, setBanglesColor] = useState("Beige");
+  const [pandoraColor, setPandoraColor] = useState("Rose");
+  const [bonnetColor1, setBonnetColor1] = useState("Beige");
+  const [bonnetColor2, setBonnetColor2] = useState("Blanc");
+  const [previewVariant, setPreviewVariant] = useState<{
+    category?: string;
+    name: string;
+    img: string;
+    onSelect?: () => void;
+    isSelected?: boolean;
+  } | null>(null);
 
   useEffect(() => {
     setCurrentMainImg(mainImg);
@@ -1237,11 +1479,11 @@ function ProductSection({
       selected: bonnetColor,
       setSelected: setBonnetColor,
       variants: [
-        { name: "Beige Naturel", img: MESH_5 },
-        { name: "Blanc Pure", img: MESH_3 },
-        { name: "Noir Élégant", img: MESH_2 },
-        { name: "Marron Chocolat", img: MESH_4 },
-        { name: "Rouge Passion", img: MESH_1 },
+        { name: "Beige", img: MESH_5 },
+        { name: "Blanc", img: MESH_3 },
+        { name: "Noir", img: MESH_2 },
+        { name: "Marron", img: MESH_4 },
+        { name: "Rouge", img: MESH_1 },
       ],
     },
     {
@@ -1249,10 +1491,10 @@ function ProductSection({
       selected: banglesColor,
       setSelected: setBanglesColor,
       variants: [
-        { name: "Beige Nacré", img: BANGLES_1 },
-        { name: "Ambre Miel", img: BANGLES_2 },
-        { name: "Ébène Écaille", img: BANGLES_3 },
-        { name: "Rouge Rubis", img: BANGLES_4 },
+        { name: "Beige", img: BANGLES_1 },
+        { name: "Ambre", img: BANGLES_2 },
+        { name: "Marron", img: BANGLES_3 },
+        { name: "Rouge", img: BANGLES_4 },
       ],
     },
     {
@@ -1260,10 +1502,10 @@ function ProductSection({
       selected: pandoraColor,
       setSelected: setPandoraColor,
       variants: [
-        { name: "Rose Sakura", img: PANDORA_1 },
-        { name: "Bleu Océan", img: PANDORA_2 },
-        { name: "Or Rose & Strass", img: PANDORA_3 },
-        { name: "Coeur & Lotus", img: PANDORA_4 },
+        { name: "Rose", img: PANDORA_1 },
+        { name: "Bleu", img: PANDORA_2 },
+        { name: "Or Rose", img: PANDORA_3 },
+        { name: "Argent", img: PANDORA_4 },
       ],
     },
   ];
@@ -1411,33 +1653,9 @@ function ProductSection({
               )}
             </div>
 
-            {/* Description Détaillée */}
-            {!isSpecial && (
-              <p
-                className="font-sans mb-6 text-sm"
-                style={{ color: "#5A524A", lineHeight: 1.75 }}
-              >
-                {description.includes("inoxydable") ? (
-                  <>
-                    {description.split(/(inoxydable)/i).map((part, idx) =>
-                      part.toLowerCase() === "inoxydable" ? (
-                        <span key={idx} style={{ color: "#C8A96A", fontWeight: 600 }}>
-                          {part}
-                        </span>
-                      ) : (
-                        part
-                      )
-                    )}
-                  </>
-                ) : (
-                  description
-                )}
-              </p>
-            )}
-
             {/* Variantes de Couleurs / Selection Pack */}
             {isSpecial ? (
-              <div className="mb-7 space-y-4 w-full">
+              <div className="mb-6 space-y-4 w-full">
                 <div
                   className="p-4 transition-all text-left rounded-lg"
                   style={{
@@ -1465,7 +1683,7 @@ function ProductSection({
                 </div>
               </div>
             ) : imageVariants && imageVariants.length > 0 ? (
-              <div className="mb-7 w-full text-center">
+              <div className="mb-6 w-full text-center">
                 <p
                   className="font-sans text-xs uppercase tracking-widest mb-3 text-center"
                   style={{ color: "#8A7F74", fontSize: "0.68rem" }}
@@ -1528,7 +1746,7 @@ function ProductSection({
                 </div>
               </div>
             ) : (
-              <div className="mb-7 w-full text-center">
+              <div className="mb-6 w-full text-center">
                 <p
                   className="font-sans text-xs uppercase tracking-widest mb-2.5 text-center"
                   style={{ color: "#8A7F74", fontSize: "0.68rem" }}
@@ -1558,6 +1776,30 @@ function ProductSection({
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Description Détaillée */}
+            {!isSpecial && (
+              <p
+                className="font-sans mb-6 text-sm"
+                style={{ color: "#5A524A", lineHeight: 1.75 }}
+              >
+                {description.includes("inoxydable") ? (
+                  <>
+                    {description.split(/(inoxydable)/i).map((part, idx) =>
+                      part.toLowerCase() === "inoxydable" ? (
+                        <span key={idx} style={{ color: "#C8A96A", fontWeight: 600 }}>
+                          {part}
+                        </span>
+                      ) : (
+                        part
+                      )
+                    )}
+                  </>
+                ) : (
+                  description
+                )}
+              </p>
             )}
 
             {/* Bouton CTA */}
@@ -2237,13 +2479,42 @@ export default function App() {
             ))}
           </div>
 
-          <button
-            className="btn-primary cursor-pointer"
-            style={{ padding: isMobile ? "8px 18px" : "10px 28px", fontSize: isMobile ? "0.75rem" : "0.8125rem" }}
-            onClick={() => setNavSelectModalOpen(true)}
-          >
-            Commander
-          </button>
+          <div className="flex items-center gap-3">
+            <a
+              href="https://www.instagram.com/luunacrocheet/"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Suivez-nous sur Instagram @luunacrocheet"
+              aria-label="Instagram @luunacrocheet"
+              className="flex items-center justify-center rounded-full transition-all cursor-pointer"
+              style={{
+                width: 36,
+                height: 36,
+                border: "1.5px solid rgba(200,169,106,0.5)",
+                color: "#C8A96A",
+                background: "rgba(200,169,106,0.06)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#C8A96A";
+                e.currentTarget.style.color = "#111";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(200,169,106,0.06)";
+                e.currentTarget.style.color = "#C8A96A";
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+              </svg>
+            </a>
+            <button
+              className="btn-primary cursor-pointer"
+              style={{ padding: isMobile ? "8px 18px" : "10px 28px", fontSize: isMobile ? "0.75rem" : "0.8125rem" }}
+              onClick={() => setNavSelectModalOpen(true)}
+            >
+              Commander
+            </button>
+          </div>
         </div>
 
         {/* ── Sub-navbar (Mobile Uniquement — Liens de défilement vers cartes spécifiques) ── */}
@@ -2539,38 +2810,36 @@ export default function App() {
 
             {/* Icône réseau social (Instagram uniquement) */}
             <div className="flex justify-center">
-              {[
-                {
-                  name: "Instagram",
-                  path: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z",
-                },
-              ].map((social) => (
-                <a
-                  key={social.name}
-                  href="#"
-                  aria-label={social.name}
-                  className="flex items-center justify-center transition-all"
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: "50%",
-                    border: "1px solid rgba(17,17,17,0.15)",
-                    color: "#8A7F74",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#C8A96A";
-                    e.currentTarget.style.color = "#C8A96A";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(17,17,17,0.15)";
-                    e.currentTarget.style.color = "#8A7F74";
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                    <path d={social.path} />
-                  </svg>
-                </a>
-              ))}
+              <a
+                href="https://www.instagram.com/luunacrocheet/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram @luunacrocheet"
+                title="Suivez-nous sur Instagram @luunacrocheet"
+                className="flex items-center justify-center transition-all cursor-pointer"
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: "50%",
+                  border: "1.5px solid rgba(200,169,106,0.4)",
+                  color: "#C8A96A",
+                  background: "rgba(200,169,106,0.06)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#C8A96A";
+                  e.currentTarget.style.background = "#C8A96A";
+                  e.currentTarget.style.color = "#111";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(200,169,106,0.4)";
+                  e.currentTarget.style.background = "rgba(200,169,106,0.06)";
+                  e.currentTarget.style.color = "#C8A96A";
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                </svg>
+              </a>
             </div>
 
             {/* Ligne inférieure */}
