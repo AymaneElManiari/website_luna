@@ -2427,6 +2427,86 @@ export default function App() {
     "Ivoire + Or Rose": "linear-gradient(135deg,#F5F0E8 50%,#B76E79 50%)",
   };
 
+  // ── Gestion de la Navigation Directe par Ancre Hash (ex: #product-bangles\) ──────
+  useEffect(() => {
+    const HASH_TARGET_MAP: Record<string, string> = {
+      "product-bangles": "product-bangles",
+      bangles: "product-bangles",
+      "bracelets-joncs": "product-bangles",
+      "product-bonnet": "product-bonnet",
+      bonnet: "product-bonnet",
+      bonnets: "product-bonnet",
+      "product-pandora": "product-pandora",
+      pandora: "product-pandora",
+      bundle: "bundle",
+      pack: "bundle",
+      "pack-exclusif": "bundle",
+      collection: "collection",
+      faq: "faq",
+      story: "story",
+    };
+
+    const handleHashScroll = () => {
+      const hash = window.location.hash;
+      if (!hash) return;
+
+      // Nettoyer les caractères spéciaux et antislashs/slashs en fin d'URL (ex: #product-bangles\ ou #product-bangles/)
+      const cleanHash = hash
+        .replace(/^#/, "")
+        .replace(/[\\/]+$/, "")
+        .trim();
+
+      const normalizedKey = cleanHash.toLowerCase();
+      const targetId = HASH_TARGET_MAP[normalizedKey] || cleanHash;
+
+      if (!targetId) return;
+
+      // Nettoyer l'URL dans la barre d'adresse pour un affichage propre sans antislash
+      if ((hash.includes("\\") || hash.includes("/")) && window.history.replaceState) {
+        try {
+          window.history.replaceState(null, "", `#${targetId}`);
+        } catch {
+          // Ignorer les erreurs d'historique
+        }
+      }
+
+      const scrollToElement = () => {
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+          return true;
+        }
+        return false;
+      };
+
+      if (!scrollToElement()) {
+        const t1 = setTimeout(scrollToElement, 100);
+        const t2 = setTimeout(scrollToElement, 300);
+        const t3 = setTimeout(scrollToElement, 650);
+        return () => {
+          clearTimeout(t1);
+          clearTimeout(t2);
+          clearTimeout(t3);
+        };
+      }
+    };
+
+    handleHashScroll();
+
+    window.addEventListener("hashchange", handleHashScroll);
+    window.addEventListener("load", handleHashScroll);
+
+    const timer1 = setTimeout(handleHashScroll, 200);
+    const timer2 = setTimeout(handleHashScroll, 500);
+
+    return () => {
+      window.removeEventListener("hashchange", handleHashScroll);
+      window.removeEventListener("load", handleHashScroll);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, []);
+
   const openOrderModal = (productName?: string | null, colorName?: string | null) => {
     setModalProduct(productName || "Pack Exclusif (Les 3 pièces)");
     if (colorName) setModalColor(colorName);
